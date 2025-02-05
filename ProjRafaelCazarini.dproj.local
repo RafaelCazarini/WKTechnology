@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2025/02/04 15:19:00.000.322,C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\ProjRafaelCazarini.dproj=C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\TesteMarlon.dproj</Transaction>
+    <Transaction>2025/02/04 17:07:29.000.071,=C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\Unit1.pas</Transaction>
+    <Transaction>2025/02/04 17:26:25.000.890,C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\Unit1.dfm=C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\uSobre.dfm</Transaction>
+    <Transaction>2025/02/04 17:26:25.000.890,C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\Unit1.pas=C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\uSobre.pas</Transaction>
+    <Transaction>2025/02/04 20:16:10.700,=C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\Unit1.pas</Transaction>
+    <Transaction>2025/02/04 20:16:34.064,C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\UCliente.pas=C:\Users\rafael.cazarini\Documents\Embarcadero\Studio\Projects\WK-Rafael Cazarini\Unit1.pas</Transaction>
+  </Transactions>
+</BorlandProject>

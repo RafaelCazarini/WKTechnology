@@ -30,6 +30,7 @@ type
     Image1: TImage;
     EdtDesCli: TEdit;
     BtnCancel: TButton;
+    BtnGravarPedido: TButton;
     procedure EdtCodClienteExit(Sender: TObject);
     procedure BtnFecharClick(Sender: TObject);
     procedure EdtProdutoExit(Sender: TObject);
@@ -43,10 +44,13 @@ type
     procedure FormCreate(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure BtnCancelClick(Sender: TObject);
+    procedure BtnGravarPedidoClick(Sender: TObject);
+    procedure AlimentaGrid();
   private
     VInAlterando : Boolean;
     { Private declarations}
     function ApenasNumeros(const Texto: string): string;
+    procedure LimparCampos;
   public
 
   Procedure CarregaDados;
@@ -84,11 +88,7 @@ end;
 
 procedure TCadPedido.BtnCancelClick(Sender: TObject);
 begin
-  if Assigned(DMPedido) then
-    FreeAndNil(DMPedido);
-  CadPedido.Free;
-  Application.CreateForm(TCadPedido, CadPedido);
-  CadPedido.Show;
+  LimparCampos
 end;
 
 procedure TCadPedido.BtnCarregarPedidoClick(Sender: TObject);
@@ -98,6 +98,7 @@ begin
     if SelCarregaPedido.ShowModal = mrOk then
     begin
       DMPedido.PreparaItemPedido;
+      AlimentaGrid;
       RecarregaDados;
       BuscaTotalPedido;
     end
@@ -138,34 +139,93 @@ end;
 
 procedure TCadPedido.BtnGravaClick(Sender: TObject);
 begin
-  with DMPedido do
+  if (EdtQuantidadePedido.Text = '') or (EdtProduto.Text = '') or (EdtCodCliente.Text = '') then
   begin
-    if (EdtQuantidadePedido.text = '') or (EdtProduto.text = '') or (EdtCodCliente.Text = '') then
-    begin
-      ShowMessage('Por favor, Preencha todos os campos.');
-      exit;
-    end;
-
-
-    //INSERI PEDIDO NA TABELA PARA PODER INSERIR PRODUTOS
-    if uGeral.Pedido.CodPed = 0 then
-      GravaPedido(strtoint(EdtCodCliente.Text));
-
-    CarregaDados; // Carrega dados Pedido
-
-    if not VInAlterando then
-      UGeral.ItemPedido.Inserir(DMPedido.FDConnection1)
-    else
-      UGeral.ItemPedido.Alterar(DMPedido.FDConnection1);
+    ShowMessage('Por favor, preencha todos os campos.');
+    Exit;
   end;
 
-  VInAlterando := false;
+  // Verifica se o DataSet do MemItensPedido está ativo
+  if not DMPedido.MemItensPedido.Active then
+    DMPedido.MemItensPedido.Open;
 
-  //Limpa componentes e totaliza Pedido
-  DMPedido.PreparaItemPedido;
-  DMPedido.TotalizaPedido;
+  with DMPedido.MemItensPedido do
+  begin
+    if VInAlterando then
+    begin
+      Edit;
+    end
+    else
+    begin
+      Append;
+    end;
+
+    FieldByName('CodPro').AsInteger := StrToInt(EdtProduto.Text);
+    FieldByName('DesPro').AsString := EdtDesProduto.Text;
+    FieldByName('QtdPed').AsInteger := StrToInt(EdtQuantidadePedido.Text);
+    FieldByName('VlrUni').AsFloat := StrToFloat(ApenasNumeros(EdtPrecoVenda.Text));
+    FieldByName('VlrPro').AsFloat := StrToFloat(ApenasNumeros(EdtPrecoVenda.Text)) * StrToInt(EdtQuantidadePedido.Text);
+    Post;
+  end;
+
   LimpaCamposProdutos;
-  BuscaTotalPedido;
+  VInAlterando := False;
+end;
+
+
+procedure TCadPedido.BtnGravarPedidoClick(Sender: TObject);
+var
+  FS: TFormatSettings;
+begin
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := '.'; // Garante o formato correto
+
+  if DMPedido.MemItensPedido.IsEmpty then
+  begin
+    ShowMessage('Não há itens no pedido para confirmar.');
+    Exit;
+  end;
+
+  DMPedido.FDConnection1.StartTransaction;
+  try
+    if uGeral.Pedido.CodPed = 0 then
+    begin
+      uGeral.Pedido.CodCli := StrToInt(EdtCodCliente.Text);
+      UGeral.Pedido.Insert(DMPedido.FDConnection1);
+    end;
+
+    DMPedido.MemItensPedido.First;
+    while not DMPedido.MemItensPedido.Eof do
+    begin
+      if DMPedido.MemItensPedido.FieldByName('CdItem').AsInteger = 0 then
+      Begin
+        UGeral.ItemPedido.CodPed := UGeral.Pedido.CodPed;
+        UGeral.ItemPedido.CodPro := DMPedido.MemItensPedido.FieldByName('CodPro').AsInteger;
+        UGeral.ItemPedido.VlrPro := StrToFloat(ApenasNumeros(DMPedido.MemItensPedido.FieldByName('VlrPro').AsString), FS);
+        UGeral.ItemPedido.VlrUni := StrToFloat(ApenasNumeros(DMPedido.MemItensPedido.FieldByName('VlrUni').AsString), FS);
+        UGeral.ItemPedido.QtdPed := DMPedido.MemItensPedido.FieldByName('QtdPed').AsInteger;
+
+        UGeral.ItemPedido.Inserir(DMPedido.FDConnection1);
+      End;
+      DMPedido.MemItensPedido.Next;
+    end;
+
+    DMPedido.totalizaPedido();
+    DMPedido.FDConnection1.Commit;
+    ShowMessage('Pedido gravado com sucesso!');
+    DMPedido.MemItensPedido.EmptyDataSet;
+
+    //Limpa componentes e totaliza Pedido
+
+    LimparCampos;
+    BuscaTotalPedido;
+  except
+    on E: Exception do
+    begin
+      DMPedido.FDConnection1.Rollback;
+      ShowMessage('Erro ao gravar pedido: ' + E.Message);
+    end;
+  end;
 end;
 
 Procedure TCadPedido.LimpaCamposProdutos;
@@ -185,6 +245,7 @@ begin
 end;
 
 Procedure TCadPedido.BuscaTotalPedido;
+var FS: TFormatSettings;
 begin
   with DMPedido do
   begin
@@ -199,7 +260,14 @@ begin
       Qaux.open;
 
       if not Qaux.IsEmpty then
+      begin
         LbResultValorPedido.Caption := FormatCurr('R$ #,##0.00', Qaux.FieldByName('VlrTot').Value);
+        FS := TFormatSettings.Create;
+        FS.DecimalSeparator := '.';
+        FS.ThousandSeparator := ',';
+
+        LbResultValorPedido.Caption := FormatFloat('0.00', Qaux.FieldByName('VlrTot').Value, FS);
+      end;
     end;
   end;
 end;
@@ -213,6 +281,7 @@ begin
 end;
 
 Procedure TCadPedido.RecarregaDadosProdutos;
+var FS: TFormatSettings;
 begin
   UGeral.ItemPedido.CodPro := DBGrid1.DataSource.DataSet.FieldByName('CodPro').AsInteger;
   UGeral.Produto.DesPro    := DBGrid1.DataSource.DataSet.FieldByName('DesPro').AsString;
@@ -223,7 +292,12 @@ begin
   EdtProduto.Text          := IntToStr(UGeral.ItemPedido.CodPro);
   EdtDesProduto.Text       := UGeral.Produto.DesPro;
   EdtQuantidadePedido.Text := FloatToStr(UGeral.ItemPedido.QtdPed);
-  EdtPrecoVenda.Text       := FormatCurr('R$ #,##0.00', UGeral.ItemPedido.VlrUni)
+
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := '.';
+  FS.ThousandSeparator := ',';
+
+  EdtPrecoVenda.Text := FormatFloat('0.00', UGeral.ItemPedido.VlrUni, FS);
 end;
 
 procedure TCadPedido.CarregaDados;
@@ -247,7 +321,7 @@ begin
     if key = VK_DELETE then
     begin
       if MessageDlg('Você deseja continuar?', mtConfirmation, [mbyes, mbNo], 0) = 6 then
-        DeletaProduto(DBGrid1.DataSource.DataSet.FieldByName('CodPed').AsInteger,DBGrid1.DataSource.DataSet.FieldByName('CdItem').AsInteger)
+        DeletaProduto(UGeral.Pedido.CodPed, DBGrid1.DataSource.DataSet.FieldByName('CdItem').AsInteger)
     end;
 
     if key = VK_RETURN then
@@ -297,7 +371,9 @@ begin
   end;
 end;
 
+
 procedure TCadPedido.EdtProdutoExit(Sender: TObject);
+var FS: TFormatSettings;
 begin
   if not (EdtProduto.Text <> '') then
     exit;
@@ -306,25 +382,97 @@ begin
   begin
    if not (ValidaProduto(strtoint(EdtProduto.Text))) then
    begin
-     ShowMessage('Atenção! Produto não cadastrato.');
-     EdtProduto.clear;
+     ShowMessage('Atenção! Produto não cadastrado.');
+     EdtProduto.Clear;
      EdtProduto.SetFocus;
      exit;
    end
    else
    begin
      EdtDesProduto.Text := UGeral.Produto.DesPro;
-     EdtPrecoVenda.Text := FormatCurr('R$ #,##0.00', UGeral.Produto.PreVen); //FloatToStr(UGeral.Produto.PreVen);
+
+     // Garante que a formatação seja feita corretamente
+
+     FS := TFormatSettings.Create;
+     FS.DecimalSeparator := '.';
+     FS.ThousandSeparator := ',';
+
+     EdtPrecoVenda.Text := FormatFloat('0.00', UGeral.Produto.PreVen, FS);
    end;
   end;
 end;
 
 function TCadPedido.ApenasNumeros(const Texto: string): string;
+var
+  FS: TFormatSettings;
+  TempStr: string;
+  I, PontoPos: Integer;
 begin
-  Result := Texto;
-  Result := Result.Replace('R$', '', [rfReplaceAll]) // Remove "R$"
-                  .Replace('.', '', [rfReplaceAll])   // Remove separador de milhar
-                  .Replace(',', '.', [rfReplaceAll])  // Troca vírgula por ponto decimal
-                  .Trim;
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := '.';
+  FS.ThousandSeparator := ',';
+
+  // Remove caracteres indesejados
+  TempStr := Texto;
+  TempStr := TempStr.Replace('R$', '', [rfReplaceAll]) // Remove "R$"
+                    .Replace(',', '', [rfReplaceAll]) // Remove separador de milhar
+                    .Replace('.', ',', [rfReplaceAll]) // Troca vírgula por ponto decimal
+                    .Trim;
+
+  // Garante que haja apenas um único ponto decimal
+  PontoPos := Pos('.', TempStr);
+  for I := Length(TempStr) downto 1 do
+  begin
+    if (TempStr[I] = '.') and (I <> PontoPos) then
+      Delete(TempStr, I, 1);
+  end;
+
+  Result := TempStr;
 end;
+
+procedure TCadPedido.LimparCampos;
+begin
+  EdtCodCliente.Clear;
+  EdtDesCli.Clear;
+  EdtProduto.Clear;
+  EdtPrecoVenda.Clear;
+  EdtDesProduto.Clear;
+  EdtQuantidadePedido.Clear;
+
+  if Assigned(DMPedido.MemItensPedido) then
+    DMPedido.MemItensPedido.EmptyDataSet;
+
+  BtnCarregarPedido.Enabled := EdtCodCliente.Text = '';
+  BtnCancelarPedido.Enabled := EdtCodCliente.Text = '';
+  EdtCodCliente.Enabled := EdtCodCliente.Text = '';
+  LbResultValorPedido.Caption := '';
+
+  // Fecha e recria as instâncias do pedido
+  FreeAndNil(Pedido);
+  FreeAndNil(Produto);
+  FreeAndNil(ItemPedido);
+  FreeAndNil(Cliente);
+
+  InicializarInstancias;
+end;
+
+procedure TCadPedido.AlimentaGrid();
+begin
+  // Transferir dados do TFDQuery para TFDMemTable
+  DMPedido.MemItensPedido.EmptyDataSet;
+  DMPedido.TabItemPedido.First;
+  while not DMPedido.TabItemPedido.Eof do
+  begin
+    DMPedido.MemItensPedido.Append;
+    DMPedido.MemItensPedido.FieldByName('CdItem').AsInteger := DMPedido.TabItemPedido.FieldByName('CdItem').AsInteger;
+    DMPedido.MemItensPedido.FieldByName('CodPro').AsInteger := DMPedido.TabItemPedido.FieldByName('CodPro').AsInteger;
+    DMPedido.MemItensPedido.FieldByName('DesPro').AsString := DMPedido.TabItemPedido.FieldByName('DesPro').AsString;
+    DMPedido.MemItensPedido.FieldByName('QtdPed').AsInteger := DMPedido.TabItemPedido.FieldByName('QtdPed').AsInteger;
+    DMPedido.MemItensPedido.FieldByName('VlrUni').AsFloat := DMPedido.TabItemPedido.FieldByName('VlrUni').AsFloat;
+    DMPedido.MemItensPedido.FieldByName('VlrPro').AsFloat := DMPedido.TabItemPedido.FieldByName('VlrPro').AsFloat;
+    DMPedido.MemItensPedido.Post;
+    DMPedido.TabItemPedido.Next;
+  end;
+end;
+
 end.

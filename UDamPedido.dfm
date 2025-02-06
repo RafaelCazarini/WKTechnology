@@ -1,6 +1,7 @@
 object DMPedido: TDMPedido
   OldCreateOrder = True
   OnCreate = DataModuleCreate
+  OnDestroy = DataModuleDestroy
   Height = 480
   Width = 640
   object TabPedido: TFDQuery
@@ -38,10 +39,10 @@ object DMPedido: TDMPedido
     Left = 112
     Top = 24
   end
-  object DsItemPedido: TDataSource
-    DataSet = TabItemPedido
+  object DsMemItemPedido: TDataSource
+    DataSet = MemItensPedido
     Left = 112
-    Top = 88
+    Top = 200
   end
   object TabItemPedido: TFDQuery
     Connection = FDConnection1
@@ -60,8 +61,8 @@ object DMPedido: TDMPedido
     Top = 88
     ParamData = <
       item
-        Name = 'CODPED'
-        ParamType = ptInput
+        Name = 'CodPed'
+        DataType = ftInteger
       end>
     object TabItemPedidoCditem: TIntegerField
       DisplayLabel = 'Cod.Item'
@@ -130,6 +131,7 @@ object DMPedido: TDMPedido
       'Server=localhost'
       'Port=3307'
       'DriverID=MySQL')
+    Connected = True
     LoginPrompt = False
     Left = 544
     Top = 56
@@ -140,5 +142,21 @@ object DMPedido: TDMPedido
       'K-Rafael Cazarini\libmySQL.dll'
     Left = 544
     Top = 128
+  end
+  object MemItensPedido: TFDMemTable
+    FetchOptions.AssignedValues = [evMode]
+    FetchOptions.Mode = fmAll
+    ResourceOptions.AssignedValues = [rvSilentMode]
+    ResourceOptions.SilentMode = True
+    UpdateOptions.AssignedValues = [uvCheckRequired, uvAutoCommitUpdates]
+    UpdateOptions.CheckRequired = False
+    UpdateOptions.AutoCommitUpdates = True
+    Left = 24
+    Top = 200
+  end
+  object DsItemPedido: TDataSource
+    DataSet = TabItemPedido
+    Left = 112
+    Top = 88
   end
 end

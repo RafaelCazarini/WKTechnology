@@ -43,15 +43,25 @@ begin
   if EdtPedido.Text = '' then
   begin
     ModalResult := mrCancel;
-    exit;
+    Exit;
   end;
 
   with DMPedido do
   begin
-    if VInDelete then
-    begin
-      ugeral.Pedido.CodPed := StrToInt(EdtPedido.Text);
-      ugeral.Pedido.Delete(DMPedido.FDConnection1);
+    FDConnection1.StartTransaction;
+    try
+      if VInDelete then
+      begin
+        ugeral.Pedido.CodPed := StrToInt(EdtPedido.Text);
+        ugeral.Pedido.Delete(FDConnection1);
+      end;
+      FDConnection1.Commit;
+    except
+      on E: Exception do
+      begin
+        FDConnection1.Rollback;
+        ShowMessage('Erro ao excluir pedido: ' + E.Message);
+      end;
     end;
   end;
 end;

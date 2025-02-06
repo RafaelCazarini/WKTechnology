@@ -14,7 +14,7 @@ type
   TDMPedido = class(TDataModule)
     TabPedido: TFDQuery;
     DSPedidos: TDataSource;
-    DsItemPedido: TDataSource;
+    DsMemItemPedido: TDataSource;
     TabItemPedido: TFDQuery;
     qAux: TFDQuery;
     FDConnection1: TFDConnection;
@@ -30,7 +30,10 @@ type
     TabItemPedidoVlrPro: TBCDField;
     TabItemPedidoQtdPed: TBCDField;
     TabItemPedidoVlrUni: TBCDField;
+    MemItensPedido: TFDMemTable;
+    DsItemPedido: TDataSource;
     procedure DataModuleCreate(Sender: TObject);
+    procedure DataModuleDestroy(Sender: TObject);
   private
     { Private declarations }
   public
@@ -49,6 +52,7 @@ type
    procedure GravaPedido(PCliente: Integer);
    procedure TotalizaPedido;
    procedure PreparaItemPedido;
+
     { Public declarations }
   end;
 
@@ -250,6 +254,36 @@ begin
     ON E: Exception Do
      ShowMessage('Erro inicialização, erro: ' + E.Message);
   End;
+
+    // Criando a estrutura do MemItensPedido
+  with MemItensPedido do
+  begin
+    Close;
+    FieldDefs.Clear;
+
+    FieldDefs.Add('CdItem', ftInteger);
+    FieldDefs.Add('CodPro', ftInteger);
+    FieldDefs.Add('DesPro', ftString, 80);
+    FieldDefs.Add('QtdPed', ftInteger);
+    FieldDefs.Add('VlrUni', ftFloat);
+    FieldDefs.Add('VlrPro', ftFloat);
+
+    CreateDataSet;
+
+    FieldByName('CdItem').Visible := False;
+    FieldByName('CodPro').DisplayLabel := 'Produto';
+    FieldByName('DesPro').DisplayLabel := 'Descrição';
+
+    FieldByName('QtdPed').DisplayLabel := 'Quantidade';
+    FieldByName('VlrUni').DisplayLabel := 'Valor Unitário';
+    FieldByName('VlrPro').DisplayLabel := 'Valor Total';
+  end;
+
+end;
+
+procedure TDMPedido.DataModuleDestroy(Sender: TObject);
+begin
+  MemItensPedido.Close;
 end;
 
 Procedure TDMPedido.DeletaProduto(PCodPed,PCdItem : Integer);
@@ -267,4 +301,6 @@ begin
   end;
   PreparaItemPedido;
 end;
+
+
 end.

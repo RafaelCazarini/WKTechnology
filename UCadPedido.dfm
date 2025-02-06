@@ -510,7 +510,7 @@ object CadPedido: TCadPedido
       Top = 110
       Width = 79
       Height = 25
-      Caption = '&Gravar Pedido'
+      Caption = 'Ok'
       TabOrder = 6
       OnClick = BtnGravaClick
     end
@@ -541,13 +541,22 @@ object CadPedido: TCadPedido
       TabOrder = 7
       OnClick = BtnCancelClick
     end
+    object BtnGravarPedido: TButton
+      Left = 552
+      Top = 439
+      Width = 79
+      Height = 25
+      Caption = '&Gravar Pedido'
+      TabOrder = 11
+      OnClick = BtnGravarPedidoClick
+    end
   end
   object DBGrid1: TDBGrid
     Left = 8
-    Top = 136
+    Top = 138
     Width = 704
     Height = 301
-    DataSource = DMPedido.DsItemPedido
+    DataSource = DMPedido.DsMemItemPedido
     TabOrder = 1
     TitleFont.Charset = DEFAULT_CHARSET
     TitleFont.Color = clWindowText
